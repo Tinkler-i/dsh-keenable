@@ -1,0 +1,66 @@
+{
+  "name": "@keenable/dsh-keenable",
+  "version": "0.1.0",
+  "description": "Keenable web search and page fetch for DeepSeek Harness: the built-in web_search and web_fetch tools, with no API key needed",
+  "license": "MIT",
+  "author": "Keenable (https://keenable.ai)",
+  "homepage": "https://github.com/keenableai/dsh-keenable#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keenableai/dsh-keenable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keenableai/dsh-keenable/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "keenable",
+    "web-search",
+    "web-fetch",
+    "no-api-key"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:live": "KEENABLE_LIVE=1 node --test test/live.test.js"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-launch-environment": ">=0.1.7-rc.2",
+    "@deepseek-ai/dsh-web": ">=0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-launch-environment": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tool-web": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-web": "0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "js-yaml": "4.1.0"
+  }
+}
