@@ -37,6 +37,13 @@ describe('bundle manifest', () => {
     assert.equal(VERSION, manifest.version)
   })
 
+  it('ships the browser half the Client module table loads', () => {
+    assert.equal(manifest.exports['./client'], './src/client.js')
+    assert.equal(manifest.dsh.client.platform, 'web')
+    assert.ok(Array.isArray(manifest.dsh.client.inject))
+    assert.ok(manifest.files.includes('src'), 'the published files include the browser half')
+  })
+
   it('declares every DeepSeek package it imports as a peer, with an open range', () => {
     const imported = new Set()
     for (const file of ['index.js', 'http.js', 'search.js', 'fetch.js']) {

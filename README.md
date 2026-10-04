@@ -28,7 +28,7 @@ npx @deepseek-ai/dsh web
 
 Profiles are separate: `web`, `tui` and `headless` each need their own install. Replace `web` with the profile you run.
 
-Then ask your model to search the web. No further setup is needed.
+Then ask your model to search the web. No further setup is needed. The plugin adds a **Configure** control to its row on the **Plugins** page; that is where the optional API key goes.
 
 ## Limits and the optional API key
 
@@ -36,20 +36,22 @@ Without a key, requests go to Keenable's public endpoints, limited to 10 request
 
 A key lifts the limit. Create one in the [Keenable console](https://app.keenable.ai/console), then either:
 
-- set `KEENABLE_API_KEY` in the environment Harness starts in, or
-- enter it as **apiKey** in this plugin's settings on the **Plugins** page.
+- open **Plugins → @keenable/dsh-keenable**, use the **Configure** control on the `keenable` row, and save the key there, or
+- set `KEENABLE_API_KEY` in the environment Harness starts in.
 
-A key in the settings wins over the environment variable.
+A key saved from the page wins over the environment variable. It is written to the credentials domain rather than to the settings file, so its literal never appears in a settings response. The provider resolves the reference when it activates, so restart Harness — or switch the plugin off and on — after saving, for the new key to be used.
 
 ## Settings
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `apiKey` | `$KEENABLE_API_KEY` | Optional. Switches both tools to the authenticated endpoints. |
-| `maxSnippetChars` | `500` | Excerpt length per search result, 180 to 10,000 characters. |
-| `fetchLive` | `true` | Fetch pages live from the source. When off, `web_fetch` returns Keenable's indexed copy and fails for pages it has not indexed. |
-| `maxBodyChars` | `100000` | Maximum characters of page text `web_fetch` returns. Longer pages are cut and marked as truncated. |
-| `baseURL` | `https://api.keenable.ai` | API origin. HTTPS only. |
+Only the key has a page control. The other four are profile configuration, read once when the plugin activates: put them under the row's `config` in your profile's `cordis.patch.yml`, beside `apiKey` if you set the key there instead. A page that wrote them could not make them take effect without a restart.
+
+| Setting | Where | Default | Meaning |
+| --- | --- | --- | --- |
+| `apiKey` | **Configure** control, or `config` | `$KEENABLE_API_KEY` | Optional. Switches both tools to the authenticated endpoints. |
+| `maxSnippetChars` | `config` | `500` | Excerpt length per search result, 180 to 10,000 characters. |
+| `fetchLive` | `config` | `true` | Fetch pages live from the source. When off, `web_fetch` returns Keenable's indexed copy and fails for pages it has not indexed. |
+| `maxBodyChars` | `config` | `100000` | Maximum characters of page text `web_fetch` returns. Longer pages are cut and marked as truncated. |
+| `baseURL` | `config` | `https://api.keenable.ai` | API origin. HTTPS only. |
 
 ## Keeping the local fetch provider
 
@@ -76,16 +78,18 @@ Search queries and fetched URLs are sent to Keenable, even when your model runs 
 | "requests share a per-IP limit" | The keyless limit was reached. Wait, or set an API key. |
 | "Fetching from private/internal hosts is not allowed" | Keenable does not fetch `localhost` or private addresses. Use the local HTTP fetch provider for those (see above). |
 | Search still asks for DeepSeek credentials | Another patch layer pins `searchProvider` back. Check the composed profile with `npx @deepseek-ai/dsh --profile web --dump-config`. |
+| The row has no **Configure** control | The browser half has not loaded. It ships inside the package and loads with the Harness app, so restart Harness after installing or updating the plugin. |
+| A key saved on the page is not used yet | The provider resolves `KEENABLE_API_KEY` when it activates. Restart Harness, or switch the plugin off and on, after saving. |
 
 ## Development
 
 ```sh
 npm ci
-npm test            # offline: providers, plugin registration, model-facing tools, manifest
+npm test            # offline: providers, plugin registration, model-facing tools, manifest, browser half
 npm run test:live   # real Keenable API, no key
 ```
 
-The tests load the plugin into a real Cordis context with Harness's own `dsh-web` seam and `web_search`/`web_fetch` tools. The code is plain JavaScript and needs no build step.
+The tests load the plugin into a real Cordis context with Harness's own `dsh-web` seam and `web_search`/`web_fetch` tools. The browser half is covered too: `test/client.test.js` evaluates the artifact the way the Client module table does, with a stubbed `react` and Client context, so the slot registration, the credential read, and the save path run under Node. The code is plain JavaScript and needs no build step.
 
 ## License
 
