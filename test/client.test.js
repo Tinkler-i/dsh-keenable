@@ -6,6 +6,7 @@
  * page performs, under test without a browser.
  */
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { describe, it } from 'node:test'
 
 /** Enough of `react` for a class component to be constructed and inspected. */
@@ -226,5 +227,24 @@ describe('the row page', () => {
     await form.save()
     assert.equal(form.state.status, 'failed')
     assert.equal(form.state.detail, 'transport')
+  })
+
+  it('treats a rejection with no message as a failure, not as a save', async () => {
+    const { ctx } = fakeContext({ set: async () => ({ ok: false }) })
+    const form = mount(ctx)
+    form.state.value = 'keen_rejected'
+    await form.save()
+    assert.equal(form.state.status, 'failed')
+    assert.equal(form.state.value, 'keen_rejected', 'the typed key survives a refusal')
+    assert.equal(form.state.detail, '')
+  })
+
+  it('never claims which endpoints the provider uses', async () => {
+    // The effective key can also come from the row's config or from the
+    // environment Harness starts in, neither of which this page can see, so the
+    // copy stays about the one reference it manages. Guarded here because the
+    // review that caught the over-claim asked for it.
+    const source = await readFile(new URL('../src/client.js', import.meta.url), 'utf8')
+    assert.doesNotMatch(source, /authenticated endpoints|public endpoints|带鉴权的接口|公共接口/)
   })
 })

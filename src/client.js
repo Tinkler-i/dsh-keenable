@@ -14,7 +14,10 @@
  * `KEENABLE_API_KEY` reference the provider already resolves from the launch
  * environment, so a page can write it without touching the profile. The provider
  * resolves that reference once, when it activates, so the page says so after a
- * save rather than pretending the change is already in force.
+ * save rather than pretending the change is already in force. The row's own
+ * `config.apiKey` wins over this reference, and the launching environment
+ * supplies it too, so the page stays about the one reference it manages and never
+ * claims to be the provider's effective key.
  * `maxSnippetChars`, `fetchLive`, `maxBodyChars` and `baseURL` stay profile
  * configuration on purpose: the provider reads them once at activation too, so a
  * page that wrote them would report a save that changes nothing until the next
@@ -50,9 +53,9 @@ window.__ModuleLoader__.load({
     const en = {
       summary: 'Optional API key for Keenable search and fetch.',
       apiKey: 'API key',
-      hint: 'Stored in the credentials domain, not in the settings file. Leave blank to keep the key in force.',
-      configured: 'A key is configured; both tools use the authenticated endpoints.',
-      unconfigured: 'No key is configured; both tools use the public endpoints, limited to 10 requests per second and 1,000 per hour per IP address.',
+      hint: 'Saved in the credentials domain, not in the settings file. The provider uses this reference only when the row sets no apiKey of its own.',
+      configured: 'A key is saved for this reference.',
+      unconfigured: 'No key is saved for this reference. A profile apiKey, or the environment Harness starts in, can still supply one.',
       unavailable: 'The Host did not answer for this credential, so its state is unknown here.',
       save: 'Save',
       saving: 'Saving…',
@@ -66,9 +69,9 @@ window.__ModuleLoader__.load({
     const zh = {
       summary: 'Keenable 搜索与抓取的可选 API Key。',
       apiKey: 'API Key',
-      hint: '存入凭据域，不写入设置文件。留空表示保持当前密钥。',
-      configured: '已配置密钥；两个工具都走带鉴权的接口。',
-      unconfigured: '未配置密钥；两个工具走公共接口，限 10 次/秒、1000 次/小时每 IP。',
+      hint: '存入凭据域，不写入设置文件。仅当该行自己没有配置 apiKey 时，提供方才会用这个引用。',
+      configured: '该引用已保存密钥。',
+      unconfigured: '该引用未保存密钥。profile 里的 apiKey，或 Harness 启动环境，仍可能提供密钥。',
       unavailable: 'Host 未返回该凭据的状态，此处无法判断。',
       save: '保存',
       saving: '保存中…',
@@ -178,15 +181,20 @@ window.__ModuleLoader__.load({
           return
         }
         this.setState({ status: 'saving', detail: '' })
-        let failure = ''
+        let rejected = false
+        let detail = ''
         try {
           const response = await this.props.ctx.remote.credentials.set(API_KEY_REF, key)
-          if (response?.ok === false) failure = response.message ?? ''
+          if (response?.ok === false) {
+            rejected = true
+            detail = response.message ?? ''
+          }
         } catch (error) {
-          failure = error instanceof Error ? error.message : String(error)
+          rejected = true
+          detail = error instanceof Error ? error.message : String(error)
         }
-        if (failure !== '') {
-          this.setState({ status: 'failed', detail: failure })
+        if (rejected) {
+          this.setState({ status: 'failed', detail })
           return
         }
         this.setState({ value: '', status: 'saved', detail: '' })

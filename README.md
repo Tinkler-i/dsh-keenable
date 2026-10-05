@@ -39,7 +39,7 @@ A key lifts the limit. Create one in the [Keenable console](https://app.keenable
 - open **Plugins → @keenable/dsh-keenable**, use the **Configure** control on the `keenable` row, and save the key there, or
 - set `KEENABLE_API_KEY` in the environment Harness starts in.
 
-A key saved from the page wins over the environment variable. It is written to the credentials domain rather than to the settings file, so its literal never appears in a settings response. The provider resolves the reference when it activates, so restart Harness — or switch the plugin off and on — after saving, for the new key to be used.
+The provider resolves its key from the row's `config.apiKey` first, and from the `KEENABLE_API_KEY` reference second — the reference the page writes, and the one the launching environment supplies. So a key saved on the page is used **only when the row's `config` sets no `apiKey`**: if you set one there, remove it for the page's key to take over. Either way the key is saved to the credentials domain rather than to the settings file, so its literal never appears in a settings response. The provider resolves the reference when it activates, so restart Harness — or switch the plugin off and on — after saving, for the new key to be used.
 
 ## Settings
 
@@ -47,7 +47,7 @@ Only the key has a page control. The other four are profile configuration, read 
 
 | Setting | Where | Default | Meaning |
 | --- | --- | --- | --- |
-| `apiKey` | **Configure** control, or `config` | `$KEENABLE_API_KEY` | Optional. Switches both tools to the authenticated endpoints. |
+| `apiKey` | **Configure** control, or `config` | `$KEENABLE_API_KEY` | Optional. Switches both tools to the authenticated endpoints. A value under `config` wins over the reference the page writes. |
 | `maxSnippetChars` | `config` | `500` | Excerpt length per search result, 180 to 10,000 characters. |
 | `fetchLive` | `config` | `true` | Fetch pages live from the source. When off, `web_fetch` returns Keenable's indexed copy and fails for pages it has not indexed. |
 | `maxBodyChars` | `config` | `100000` | Maximum characters of page text `web_fetch` returns. Longer pages are cut and marked as truncated. |
@@ -80,6 +80,7 @@ Search queries and fetched URLs are sent to Keenable, even when your model runs 
 | Search still asks for DeepSeek credentials | Another patch layer pins `searchProvider` back. Check the composed profile with `npx @deepseek-ai/dsh --profile web --dump-config`. |
 | The row has no **Configure** control | The browser half has not loaded. It ships inside the package and loads with the Harness app, so restart Harness after installing or updating the plugin. |
 | A key saved on the page is not used yet | The provider resolves `KEENABLE_API_KEY` when it activates. Restart Harness, or switch the plugin off and on, after saving. |
+| A key saved on the page is never used | The row's `config` sets `apiKey`, which wins over the reference the page writes. Remove it from the profile's `cordis.patch.yml`, or keep the key there instead. |
 
 ## Development
 
