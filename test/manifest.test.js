@@ -1,8 +1,8 @@
 /**
  * Guards the bundle manifest against the ways it can silently stop working: a
  * patch row naming a module the package does not export, a provider pin that
- * disagrees with the id the providers register under, or a peer range the
- * Harness compatibility check would refuse.
+ * disagrees with the id the providers register under, or a peer or host range
+ * the Harness compatibility check would refuse.
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -45,8 +45,16 @@ describe('bundle manifest', () => {
     }
     assert.deepEqual([...imported].sort(), Object.keys(manifest.peerDependencies).sort())
     for (const [name, range] of Object.entries(manifest.peerDependencies)) {
-      if (name.startsWith('@deepseek-ai/dsh')) assert.match(range, /^>=0\.1\.7-rc\.2$/, name)
+      if (name.startsWith('@deepseek-ai/dsh')) assert.match(range, /^>=0\.2\.0-rc\.2$/, name)
     }
     assert.equal(manifest.dependencies, undefined)
+  })
+
+  it('declares a host range on the 0.2 line that the peers agree with', () => {
+    assert.equal(manifest.dsh.engines.dsh, '>=0.2.0-rc.2 <0.4.0-0')
+    const floor = manifest.dsh.engines.dsh.split(' ')[0]
+    for (const [name, range] of Object.entries(manifest.peerDependencies)) {
+      if (name.startsWith('@deepseek-ai/dsh')) assert.equal(range, floor, name)
+    }
   })
 })

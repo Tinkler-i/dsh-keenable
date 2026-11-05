@@ -15,7 +15,7 @@ An API key is optional. It only lifts the rate limit described [below](#limits-a
 
 ## Install
 
-Requires DeepSeek Harness 0.1.7-rc.2 or later and Node.js 22.12 or later.
+Requires DeepSeek Harness 0.2.0-rc.2 or later (below 0.4) and Node.js 22.12 or later. On a 0.1.x Harness, install `@keenable/dsh-keenable@0.1.0`.
 
 **From Harness:** open **Plugins → Add plugin**, enter `@keenable/dsh-keenable`, then **Install → Enable now**.
 
@@ -34,14 +34,21 @@ Then ask your model to search the web. No further setup is needed.
 
 Without a key, requests go to Keenable's public endpoints, limited to 10 requests per second and 1,000 per hour per IP address. Search and fetch are counted separately. Everyone behind the same network address shares the limit, so a busy office or CI runner can reach it; the tool error then says so.
 
-A key lifts the limit. Create one in the [Keenable console](https://app.keenable.ai/console), then either:
+A key lifts the limit. Create one in the [Keenable console](https://app.keenable.ai/console), then set `KEENABLE_API_KEY` in the environment Harness starts in, and restart Harness.
 
-- set `KEENABLE_API_KEY` in the environment Harness starts in, or
-- enter it as **apiKey** in this plugin's settings on the **Plugins** page.
+The **Plugins** page shows no settings form for this plugin. The key can also go into your profile's `cordis.patch.yml` as the `apiKey` of the `keenable` row, where it wins over the environment variable:
 
-A key in the settings wins over the environment variable.
+```yaml
+- id: keenable
+  config:
+    apiKey: <your key>
+```
+
+That file is plain text, and Harness's profile recovery copies it to timestamped `.bak-*` files, so prefer the environment variable. Either way, the key is read when Harness starts.
 
 ## Settings
+
+These are fields of the `keenable` row in your profile's `cordis.patch.yml`, as in the example above. Harness reads them at startup.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
