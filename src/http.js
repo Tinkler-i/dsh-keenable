@@ -14,7 +14,7 @@ export const PROVIDER_ID = 'keenable'
 export const DEFAULT_BASE_URL = 'https://api.keenable.ai'
 
 /** Package version, sent in the user agent. Bump with package.json. */
-export const VERSION = '0.1.0'
+export const VERSION = '0.1.1'
 
 /**
  * Application name sent as `X-Keenable-Title`. The keyless endpoints reject a
