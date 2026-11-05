@@ -15,6 +15,7 @@ import {
   isValidBaseUrl,
   nonblank,
   providerError,
+  resolveApiKey,
 } from './http.js'
 
 const LABEL = 'Keenable fetch'
@@ -25,7 +26,8 @@ export const MAX_BODY_CHARS_LIMIT = 200_000
 export class KeenableFetchProvider {
   /**
    * @param {object} options
-   * @param {string} options.apiKey - API key, or `''` for the keyless endpoint.
+   * @param {string | (() => Promise<string | undefined>)} options.apiKey - API key, `''` for the
+   *   keyless endpoint, or a resolver called per fetch.
    * @param {string} options.baseURL - API origin.
    * @param {boolean} options.live - fetch from the source instead of the index.
    * @param {number} options.maxBodyChars - cap on returned characters.
@@ -52,10 +54,11 @@ export class KeenableFetchProvider {
     // Reject locally, before anything is sent: a file:// or credential-carrying
     // URL must never reach the API.
     assertFetchableUrl(request.url, this.options.maxUrlLength)
+    const apiKey = await resolveApiKey(this.options.apiKey, LABEL)
     const payload = await callKeenable({
-      url: `${endpoint(this.options.baseURL, '/v1/fetch', this.options.apiKey)}?${buildFetchQuery(request, this.options)}`,
+      url: `${endpoint(this.options.baseURL, '/v1/fetch', apiKey)}?${buildFetchQuery(request, this.options)}`,
       method: 'GET',
-      apiKey: this.options.apiKey,
+      apiKey,
       label: LABEL,
       signal,
     })

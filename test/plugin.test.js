@@ -17,9 +17,10 @@ import { call, hit, stubFetch } from './helpers.js'
 afterEach(() => mock.restoreAll())
 
 /** The composition the bundle patch produces, built by hand. */
-async function harness({ config = {}, env } = {}) {
+async function harness({ config = {}, env, credentials } = {}) {
   const ctx = new Context()
   if (env) ctx.provide('launchEnvironment', createLaunchEnvironmentSnapshot([{ source: 'process', values: env }]))
+  if (credentials) ctx.provide('credentials', credentials)
   await ctx.plugin(ToolRuntime, {})
   await ctx.plugin(SystemPromptRuntime, { persona: '' })
   await ctx.plugin(WebRuntime, { searchProvider: 'keenable', fetchProvider: 'keenable' })
@@ -88,6 +89,36 @@ describe('registration', () => {
     ({ ctx } = await harness({ config: { apiKey: 'keen_configured' }, env: { KEENABLE_API_KEY: 'keen_from_env' } }))
     await ctx.web.search({ query: 'q' })
     assert.equal(call(api).headers.get('x-api-key'), 'keen_configured')
+  })
+
+  it('reads KEENABLE_API_KEY through the credentials service on every request', async () => {
+    const stored = new Map()
+    const credentials = { resolve: async ref => stored.has(ref) ? { value: stored.get(ref), source: 'file' } : undefined }
+    const api = stubFetch({ results: [], url: 'https://example.com/', content: 'Example Domain' })
+    const { ctx } = await harness({ credentials })
+    await ctx.web.search({ query: 'q' })
+    assert.equal(new URL(call(api, 0).url).pathname, '/v1/search/public')
+    stored.set('KEENABLE_API_KEY', 'keen_saved')
+    await ctx.web.search({ query: 'q' })
+    assert.equal(call(api, 1).headers.get('x-api-key'), 'keen_saved')
+    await ctx.web.fetch({ url: 'https://example.com/' })
+    assert.equal(call(api, 2).headers.get('x-api-key'), 'keen_saved')
+  })
+
+  it('keeps a configured key over the credentials service', async () => {
+    const credentials = { resolve: async () => ({ value: 'keen_saved', source: 'file' }) }
+    const api = stubFetch({ results: [] })
+    const { ctx } = await harness({ config: { apiKey: 'keen_configured' }, credentials })
+    await ctx.web.search({ query: 'q' })
+    assert.equal(call(api).headers.get('x-api-key'), 'keen_configured')
+  })
+
+  it('reports a failed credential read as a provider error, without a request', async () => {
+    const credentials = { resolve: async () => { throw new Error('store locked') } }
+    const api = stubFetch({ results: [] })
+    const { ctx } = await harness({ credentials })
+    await assert.rejects(ctx.web.search({ query: 'q' }), { code: 'WEB_PROVIDER_ERROR', message: /could not read KEENABLE_API_KEY: store locked/ })
+    assert.equal(api.mock.callCount(), 0)
   })
 
   it('treats a blank key as no key', async () => {

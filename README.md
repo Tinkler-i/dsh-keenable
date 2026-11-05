@@ -39,7 +39,7 @@ A key lifts the limit. Create one in the [Keenable console](https://app.keenable
 - open **Plugins → @keenable/dsh-keenable**, use the **Configure** control on the `keenable` row, and save the key there, or
 - set `KEENABLE_API_KEY` in the environment Harness starts in.
 
-The page saves the key in Harness's credentials domain under the `KEENABLE_API_KEY` reference, not in the settings file, so it never appears in a settings response. The provider reads the key when it activates, so restart Harness, or switch the plugin off and on, after saving.
+The page saves the key in Harness's credentials domain under the `KEENABLE_API_KEY` reference, not in the settings file, so it never appears in a settings response. A saved key wins over the environment variable, and the next search uses it, with no restart. The store is read by profiles that run Harness's credentials service, as `web` does; a `headless` profile does not run it by default, so set `KEENABLE_API_KEY` in its environment instead.
 
 The key can also go into your profile's `cordis.patch.yml` as the `apiKey` of the `keenable` row, where it wins over the page and the environment variable:
 
@@ -89,7 +89,6 @@ Search queries and fetched URLs are sent to Keenable, even when your model runs 
 | "Fetching from private/internal hosts is not allowed" | Keenable does not fetch `localhost` or private addresses. Use the local HTTP fetch provider for those (see above). |
 | Search still asks for DeepSeek credentials | Another patch layer pins `searchProvider` back. Check the composed profile with `npx @deepseek-ai/dsh --profile web --dump-config`. |
 | The row has no **Configure** control | The browser half has not loaded. It ships inside the package and loads with the Harness app, so restart Harness after installing or updating the plugin. |
-| A key saved on the page is not used yet | The provider resolves `KEENABLE_API_KEY` when it activates. Restart Harness, or switch the plugin off and on, after saving. |
 | A key saved on the page is never used | The row's `config` sets `apiKey`, which wins over the reference the page writes. Remove it from the profile's `cordis.patch.yml`, or keep the key there instead. |
 
 ## Development

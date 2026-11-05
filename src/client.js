@@ -11,15 +11,14 @@
  *
  * Only the key is editable here. The key is the one documented setting that does
  * not live in the row's config: it lives in the credentials domain, under the
- * `KEENABLE_API_KEY` reference the provider already resolves from the launch
- * environment, so a page can write it without touching the profile. The provider
- * resolves that reference once, when it activates, so the page says so after a
- * save rather than pretending the change is already in force. The row's own
- * `config.apiKey` wins over this reference, and the launching environment
- * supplies it too, so the page stays about the one reference it manages and never
- * claims to be the provider's effective key.
+ * `KEENABLE_API_KEY` reference the provider resolves through the credentials
+ * service, so a page can write it without touching the profile. The provider
+ * resolves that reference on every request, so a saved key applies to the next
+ * search. The row's own `config.apiKey` wins over this reference, and the
+ * launching environment supplies it too, so the page stays about the one
+ * reference it manages and never claims to be the provider's effective key.
  * `maxSnippetChars`, `fetchLive`, `maxBodyChars` and `baseURL` stay profile
- * configuration on purpose: the provider reads them once at activation too, so a
+ * configuration on purpose: the provider reads them once at activation, so a
  * page that wrote them would report a save that changes nothing until the next
  * launch.
  * @module @keenable/dsh-keenable/client
@@ -59,7 +58,7 @@ window.__ModuleLoader__.load({
       unavailable: 'The Host did not answer for this credential, so its state is unknown here.',
       save: 'Save',
       saving: 'Saving…',
-      saved: 'Saved. Restart Harness, or switch this plugin off and on, to apply it.',
+      saved: 'Saved. The next search uses it.',
       blank: 'Enter a key before saving.',
       failed: 'The Host did not accept the key; nothing was saved.',
       readOnly: 'This deployment stores credentials read-only.',
@@ -75,7 +74,7 @@ window.__ModuleLoader__.load({
       unavailable: 'Host 未返回该凭据的状态，此处无法判断。',
       save: '保存',
       saving: '保存中…',
-      saved: '已保存。重启 Harness，或把本插件关掉再打开，即可生效。',
+      saved: '已保存，下一次搜索即生效。',
       blank: '请先填入密钥。',
       failed: 'Host 没有接受该密钥，未保存。',
       readOnly: '本部署的凭据为只读。',

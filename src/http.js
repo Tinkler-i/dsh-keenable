@@ -40,6 +40,24 @@ export function endpoint(baseURL, path, apiKey) {
 }
 
 /**
+ * The API key for one operation. A fixed string is used as is; a function is
+ * called per operation, so a key saved through Harness's credentials service
+ * reaches the next request without a restart.
+ *
+ * @param {string | (() => Promise<string | undefined>)} apiKey - the key, or its resolver.
+ * @param {string} label - operation name used in messages ("Keenable search").
+ * @returns {Promise<string>} the key, or `''` for keyless.
+ */
+export async function resolveApiKey(apiKey, label) {
+  if (typeof apiKey !== 'function') return apiKey
+  try {
+    return nonblank(await apiKey()) ?? ''
+  } catch (error) {
+    throw providerError(`${label} could not read KEENABLE_API_KEY: ${describe(error)}`, error)
+  }
+}
+
+/**
  * Send one request to the Keenable API and return the parsed JSON body.
  *
  * Redirects fail before the `Location` target is contacted, because the

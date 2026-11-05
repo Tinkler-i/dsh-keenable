@@ -12,6 +12,7 @@ import {
   isValidBaseUrl,
   nonblank,
   providerError,
+  resolveApiKey,
 } from './http.js'
 
 const LABEL = 'Keenable search'
@@ -24,7 +25,8 @@ export const SNIPPET_CHARS_MAX = 10_000
 export class KeenableSearchProvider {
   /**
    * @param {object} options
-   * @param {string} options.apiKey - API key, or `''` for the keyless endpoint.
+   * @param {string | (() => Promise<string | undefined>)} options.apiKey - API key, `''` for the
+   *   keyless endpoint, or a resolver called per search.
    * @param {string} options.baseURL - API origin.
    * @param {number} options.maxSnippetChars - excerpt budget per result.
    */
@@ -46,11 +48,12 @@ export class KeenableSearchProvider {
    * @param {AbortSignal} [signal]
    */
   async search(request, signal) {
+    const apiKey = await resolveApiKey(this.options.apiKey, LABEL)
     const payload = await callKeenable({
-      url: endpoint(this.options.baseURL, '/v1/search', this.options.apiKey),
+      url: endpoint(this.options.baseURL, '/v1/search', apiKey),
       method: 'POST',
       body: buildSearchBody(request, this.options),
-      apiKey: this.options.apiKey,
+      apiKey,
       label: LABEL,
       signal,
     })

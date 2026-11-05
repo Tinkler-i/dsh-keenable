@@ -25,12 +25,15 @@ export const name = 'keenable'
 /** The web seam both providers register into. */
 export const inject = ['web']
 
+/** The credential reference the key resolves under when the row sets none. */
+export const API_KEY_REF = 'KEENABLE_API_KEY'
+
 /** Same cap as the local HTTP fetch provider, below the tool's own output cap. */
 export const DEFAULT_MAX_BODY_CHARS = 100_000
 
 export const Config = z.object({
   apiKey: z.string().role('secret')
-    .description('Optional Keenable API key. Without one, search and fetch use the keyless endpoints, limited to 10 requests per second and 1,000 per hour per IP address. Falls back to $KEENABLE_API_KEY.'),
+    .description('Optional Keenable API key. Without one, search and fetch use the keyless endpoints, limited to 10 requests per second and 1,000 per hour per IP address. Falls back to the KEENABLE_API_KEY credential: a key saved on the Plugins page, or the environment.'),
   baseURL: z.string().default(DEFAULT_BASE_URL)
     .description('Keenable API origin. HTTPS only.'),
   maxSnippetChars: z.number().step(1).min(SNIPPET_CHARS_MIN).max(SNIPPET_CHARS_MAX).default(500)
@@ -41,11 +44,24 @@ export const Config = z.object({
     .description('Maximum characters of page text web_fetch returns.'),
 })
 
-/** Register both providers. Cordis disposes the registrations with the plugin. */
+/**
+ * Resolve {@link API_KEY_REF} for one operation: through Harness's credentials
+ * service when it runs (a key saved on the Plugins page, then the environment),
+ * else from the launch environment.
+ */
+async function resolveCredential(ctx) {
+  const credentials = ctx.get('credentials')
+  if (credentials !== undefined) return (await credentials.resolve(API_KEY_REF))?.value
+  return launchEnvironmentOf(ctx).get(API_KEY_REF)?.value
+}
+
+/**
+ * Register both providers. Cordis disposes the registrations with the plugin.
+ * A key in the row's config is fixed; otherwise each request resolves the
+ * credential, so a key saved on the Plugins page applies without a restart.
+ */
 export function apply(ctx, config) {
-  const apiKey = nonblank(config.apiKey)
-    ?? nonblank(launchEnvironmentOf(ctx).get('KEENABLE_API_KEY')?.value)
-    ?? ''
+  const apiKey = nonblank(config.apiKey) ?? (() => resolveCredential(ctx))
   ctx.web.registerSearchProvider(new KeenableSearchProvider({
     apiKey,
     baseURL: config.baseURL,
